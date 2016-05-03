@@ -66,11 +66,12 @@ def emit_c(_comp:str, _dest:str, _jump:str):
     except IndexError:
         raise RuntimeError('Failed to emit C({}={};{})'.format(_dest, _comp, _jump))
 
+
 def emit_a(address:int):
     """ Emit an A command"""
     if address > 0x7FFF or address < 0:
         raise RuntimeError('Failed to emit A({}). Out of bounds.'.format(address))
-    return '1{:015b}'.format(address)
+    return '0{:015b}'.format(address)
 
 # Implemented only because the PDF said I should.
 

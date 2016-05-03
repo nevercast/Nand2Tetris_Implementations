@@ -32,11 +32,13 @@ class SymbolMap(object):
     """
 
     map = {}
+    variable_callback = None
 
-    def __init__(self):
+    def __init__(self, variable_provider = None):
         """ Initializes defaults """
         for symbol, address in DEFAULTS.items():
             self.set(symbol, address)
+        self.variable_callback = variable_provider
 
     def set(self, symbol, address):
         """ Set a symbol value. Can only be done once.
@@ -51,9 +53,12 @@ class SymbolMap(object):
             ))
         future.set_result(address)
 
-    def get(self, symbol) -> asyncio.Future:
+    def get(self, symbol):
         """ Get's a future representing a symbol """
-        if symbol not in self.map:
-            return self.map.setdefault(symbol, asyncio.Future())
-        return self.map[symbol]
+        if symbol in self.map:
+            return self.map[symbol]
+        future = self.map.setdefault(symbol, asyncio.Future())
+        if self.variable_callback and symbol.islower():
+            self.variable_callback(self, symbol)
+        return future
 
