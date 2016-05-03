@@ -14,14 +14,7 @@ concurrency = 8000
 RUNNING = True  # Only used for a Windows fix -.-" freaking windows man!
 
 
-async def variable_provider(symbol_map: symbols.SymbolMap, symbol):
-    """ Variable address provider callback for variable allocation. """
-    global variable_address
-    await symbol_map.set(symbol, variable_address, no_check=True)
-    variable_address += 1
-
-
-map = symbols.SymbolMap(variable_provider)
+map = symbols.SymbolMap()
 
 async def resolve_operation(pline: parse.ParserLine, code_address):
     """ Do the work that takes assembly input and generates the output """
