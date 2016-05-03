@@ -7,7 +7,11 @@
 
 @2
 D=A
+@LOOP
+@SCREEN
 @3
 D=D+A
 @0
+@sum
 M=D
+(LOOP)
