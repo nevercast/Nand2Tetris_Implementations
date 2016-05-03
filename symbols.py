@@ -33,32 +33,37 @@ class SymbolMap(object):
 
     map = {}
     variable_callback = None
+    pending_symbols = set()
 
     def __init__(self, variable_provider = None):
         """ Initializes defaults """
-        for symbol, address in DEFAULTS.items():
-            self.set(symbol, address)
+        async def setup():
+            for symbol, address in DEFAULTS.items():
+                await self.set(symbol, address)
+        asyncio.get_event_loop().run_until_complete(setup())
         self.variable_callback = variable_provider
 
-    def set(self, symbol, address):
+    async def set(self, symbol, address, no_check=False):
         """ Set a symbol value. Can only be done once.
             Will raise a Runtime Error if a symbol is set more than once.
         """
-        future = self.get(symbol)
+        future = self.map[symbol] if no_check else await self.get(symbol)
         if future.done():
             raise RuntimeError('Multiple assignments to Symbol {}. {} when already {}'.format(
                 symbol,
                 address,
                 future.result()
             ))
+        self.pending_symbols.discard(symbol)
         future.set_result(address)
 
-    def get(self, symbol):
+    async def get(self, symbol):
         """ Get's a future representing a symbol """
         if symbol in self.map:
             return self.map[symbol]
+        self.pending_symbols.add(symbol)
         future = self.map.setdefault(symbol, asyncio.Future())
-        if self.variable_callback and symbol.islower():
-            self.variable_callback(self, symbol)
+        # if self.variable_callback and symbol.islower():
+        #    await self.variable_callback(self, symbol)
         return future
 

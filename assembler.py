@@ -9,26 +9,26 @@ import symbols
 
 CODE_BASE_ADDRESS = 0
 variable_address = 16
+concurrency = 8000
 
 RUNNING = True  # Only used for a Windows fix -.-" freaking windows man!
 
 
-def variable_provider(symbol_map: symbols.SymbolMap, symbol):
+async def variable_provider(symbol_map: symbols.SymbolMap, symbol):
     """ Variable address provider callback for variable allocation. """
     global variable_address
-    symbol_map.set(symbol, variable_address)
+    await symbol_map.set(symbol, variable_address, no_check=True)
     variable_address += 1
 
 
 map = symbols.SymbolMap(variable_provider)
-
 
 async def resolve_operation(pline: parse.ParserLine, code_address):
     """ Do the work that takes assembly input and generates the output """
 
     # Pre-Processing
     if pline.line_type == 'load_symbol':  # If a symbol is defined. Resolve it and yield if it's not ready yet.
-        pline.constant = await map.get(pline.symbol)
+        pline.constant = await (await map.get(pline.symbol))
         pline.line_type = 'load_constant'
 
     # Assembling
@@ -39,7 +39,7 @@ async def resolve_operation(pline: parse.ParserLine, code_address):
     elif pline.line_type == 'label':
         # Set the label to our current address
         # This will trigger any parallel tasks waiting for this symbol in a map.get()
-        map.set(pline.symbol, code_address)
+        await map.set(pline.symbol, code_address)
 
 @asyncio.coroutine
 def assemble(filename):
@@ -49,8 +49,25 @@ def assemble(filename):
     tasks = []  # Running tasks
     for parser_line in parser.parse():  # Queue parallel processing of all the lines
         tasks.append(asyncio.ensure_future(resolve_operation(parser_line, address)))
+        #if len(asyncio.Task.all_tasks()) > concurrency:
+        # yield from asyncio.tasks.wait(tasks, timeout=2, return_when=asyncio.FIRST_COMPLETED)
         if parser_line.line_type != 'label':    # Slight trample on separation of concerns
             address += 1                        # But it does save a lot of work undoing what I've done.
+
+    # End of file reached.
+    # We could have a race condition here but I hope not.
+    async def variable_allocation_service():
+        while RUNNING:
+            if map.pending_symbols:
+                missing_var = map.pending_symbols.pop()
+                global variable_address
+                await map.set(missing_var, variable_address)
+                variable_address += 1
+                # print('Allocated', missing_var)
+            await asyncio.sleep(0)
+
+    asyncio.ensure_future(variable_allocation_service())
+
 
     # In a chain (in order), emit the completed tasks.
     # If lines 1, 2 and 4 are parsed. The first two will be emitted
