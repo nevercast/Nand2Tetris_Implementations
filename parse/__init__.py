@@ -1,5 +1,5 @@
 # coding=utf-8
-""" Parses Assembly lines and provides information about them """
+""" Generic line parser"""
 import re
 import asyncio
 import softobject
