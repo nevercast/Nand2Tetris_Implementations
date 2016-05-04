@@ -12,7 +12,7 @@ RGX_SYMBOL = r'[a-zA-Z$.:][\w$.:]+'
 RGX_COMMAND_A_SYMB = r'@(?P<symbol>' + RGX_SYMBOL + ')'
 
 # @CONSTANT
-RGX_COMMAND_A_CONST = r'@(?P<constant>\d+)'
+RGX_COMMAND_A_CONST = r'@(?P<constant_int>\d+)'
 
 # (SYMBOL)
 RGX_COMMAND_L = r'\((?P<symbol>' + RGX_SYMBOL + ')\)'
@@ -79,11 +79,23 @@ class Parser(object):
         if not line:
             return
 
-        for regex, parameters in self.parser_mapping.items():
+        for regex, line_type in self.parser_mapping.items():
             match = regex.match(line)
             if match:
-                line_data = ParserLine(line=line, line_type=parameters[0])
-                parameters[1](line_data, match)
+                line_data = ParserLine(line=line, line_type=line_type)
+                for group, value in match.groupdict().items():
+                    if '_' in group:
+                        identifier, type_filter = group.split('_', maxsplit=2)
+                        if type_filter == 'int':
+                            value = int(value)
+                        else:
+                            raise RuntimeError('Unsupported type filter {} for group {}'.format(type_filter. group))
+                    else:
+                        identifier = group
+                    line_data.attributes[identifier] = value
+                print(line_data, line_data.attributes)
+                import sys
+                sys.exit(1)
                 yield line_data
 
     @staticmethod
