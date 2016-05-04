@@ -89,20 +89,6 @@ class Parser(object):
                 yield line_data
 
     @staticmethod
-    def _a_command_symbol(parser_line: ParserLine, match):
-        parser_line.symbol = match.group(1)
-
-    @staticmethod
-    def _a_command_constant(parser_line: ParserLine, match):
-        parser_line.constant = int(match.group(1))
-
-    @staticmethod
-    def _c_command(parser_line: ParserLine, match):
-        parser_line.destination = match.group(1)
-        parser_line.computation = match.group(2)
-        parser_line.jump_condition = match.group(3)
-
-    @staticmethod
     def strip_line(line):
         """ Strip whitespace and comments """
         # Remove all whitespace
