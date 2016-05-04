@@ -9,7 +9,7 @@ class ParserLine(softobject.SoftObject):
     """ A line that has been hit by the parser """
 
     line = None
-    line_type = None  # 'load_symbol', 'load_constant', 'compute', 'label'
+    line_type = None
 
     def __init__(self, line, line_type):
         self.line = line
@@ -73,7 +73,6 @@ class Parser(object):
                         identifier = group
                     setattr(line_data, identifier, value)
                 yield line_data
-
 
     def transform_line(self, line):
         """ Run transformers """
