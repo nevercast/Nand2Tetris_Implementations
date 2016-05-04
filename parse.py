@@ -2,43 +2,18 @@
 """ Parses Assembly lines and provides information about them """
 import re
 import asyncio
+import softobject
 
 
-# Matches Alpha-Numeric, $, . and :
-# The first letter cannot be decimal.
-RGX_SYMBOL = r'[a-zA-Z$.:][\w$.:]+'
-
-# @SYMBOL
-RGX_COMMAND_A_SYMB = r'@(' + RGX_SYMBOL + ')'
-
-# @CONSTANT
-RGX_COMMAND_A_CONST = r'@(\d+)'
-
-# (SYMBOL)
-RGX_COMMAND_L = r'\((' + RGX_SYMBOL + ')\)'
-
-# Command
-RGX_COMMAND_C = r'^(?:([AMD]+)=)?([01\-+ADM&|!]+)(?:;([JMLGNETPQ]{3}))?$'
-
-# Everything that is matched as a comment is deleted
-# // *
-RGX_COMMENT = r'\/\/.*'
-
-
-class ParserLine(object):
+class ParserLine(softobject.SoftObject):
     """ A line that has been hit by the parser """
+
+    line = None
+    line_type = None
 
     def __init__(self, line, line_type):
         self.line = line
         self.line_type = line_type
-
-    line = None
-    line_type = None  # 'load_symbol', 'load_constant', 'compute', 'label'
-    destination = None  # Destination for compute operation
-    computation = None  # Compute operation subtype
-    jump_condition = None  # Jump condition
-    constant = None
-    symbol = None
 
 
 class Parser(object):
@@ -48,12 +23,22 @@ class Parser(object):
         """ Constructs a parser, opening the file """
         self.file_handle = open(assembly_file)
 
-        self.parser_mapping = {re.compile(k): v for k, v in {
-            RGX_COMMAND_A_SYMB: ('load_symbol', self._a_command_symbol),
-            RGX_COMMAND_A_CONST: ('load_constant', self._a_command_constant),
-            RGX_COMMAND_L: ('label', self._a_command_symbol),
-            RGX_COMMAND_C: ('compute', self._c_command)
-        }.items()}
+        self.parser_mapping = {}
+        self.type_filters = {}
+        self.transformers = {}
+        self.add_type_filter('int', int)
+
+    def add_mapping(self, regex, command_type):
+        compiled = re.compile(regex)
+        self.parser_mapping[compiled] = command_type
+
+    def add_type_filter(self, type_name, pred):
+        self.type_filters[type_name] = pred
+
+    def add_transformer(self, select_re, transform_re):
+        if isinstance(select_re, str):
+            select_re = re.compile(select_re)
+        self.transformers[select_re] = transform_re
 
     @asyncio.coroutine
     def parse(self):
@@ -69,37 +54,28 @@ class Parser(object):
         """ Parses the line, updating properties.
         """
 
-        line = self.strip_line(line)
+        line = self.transform_line(line)
         if not line:
             return
 
-        for regex, parameters in self.parser_mapping.items():
+        for regex, line_type in self.parser_mapping.items():
             match = regex.match(line)
             if match:
-                line_data = ParserLine(line=line, line_type=parameters[0])
-                parameters[1](line_data, match)
+                line_data = ParserLine(line=line, line_type=line_type)
+                for group, value in match.groupdict().items():
+                    if '_' in group:
+                        identifier, type_filter = group.split('_', maxsplit=2)
+                        if type_filter in self.type_filters:
+                            value = self.type_filters[type_filter](value)
+                        else:
+                            raise RuntimeError('Unsupported type filter {} for group {}'.format(type_filter. group))
+                    else:
+                        identifier = group
+                    setattr(line_data, identifier, value)
                 yield line_data
 
-    @staticmethod
-    def _a_command_symbol(parser_line: ParserLine, match):
-        parser_line.symbol = match.group(1)
-
-    @staticmethod
-    def _a_command_constant(parser_line: ParserLine, match):
-        parser_line.constant = int(match.group(1))
-
-    @staticmethod
-    def _c_command(parser_line: ParserLine, match):
-        parser_line.destination = match.group(1)
-        parser_line.computation = match.group(2)
-        parser_line.jump_condition = match.group(3)
-
-    @staticmethod
-    def strip_line(line):
-        """ Strip whitespace and comments """
-        # Remove all whitespace
-        line = ''.join(line.split())
-
-        # Remove comments
-        line = re.sub(RGX_COMMENT, '', line)
+    def transform_line(self, line):
+        """ Run transformers """
+        for transform_selector, transform in self.transformers.items():
+            line = re.sub(transform_selector, transform, line)
         return line
