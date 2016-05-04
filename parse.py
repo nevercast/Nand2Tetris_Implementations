@@ -51,12 +51,15 @@ class Parser(object):
         """ Constructs a parser, opening the file """
         self.file_handle = open(assembly_file)
 
-        self.parser_mapping = {re.compile(k): v for k, v in {
-            RGX_COMMAND_A_SYMB: ('load_symbol', self._a_command_symbol),
-            RGX_COMMAND_A_CONST: ('load_constant', self._a_command_constant),
-            RGX_COMMAND_L: ('label', self._a_command_symbol),
-            RGX_COMMAND_C: ('compute', self._c_command)
-        }.items()}
+        self.parser_mapping = {}
+        self.add_mapping(RGX_COMMAND_A_SYMB, 'load_symbol')
+        self.add_mapping(RGX_COMMAND_A_CONST, 'load_constant')
+        self.add_mapping(RGX_COMMAND_L, 'label')
+        self.add_mapping(RGX_COMMAND_C, 'compute')
+
+    def add_mapping(self, regex, type):
+        compiled = re.compile(regex)
+        self.parser_mapping[compiled] = type
 
     @asyncio.coroutine
     def parse(self):
