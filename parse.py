@@ -45,14 +45,30 @@ class Parser(object):
         self.file_handle = open(assembly_file)
 
         self.parser_mapping = {}
+        self.type_filters = {}
+        self.transformers = {}
+
         self.add_mapping(RGX_COMMAND_A_SYMB, 'load_symbol')
         self.add_mapping(RGX_COMMAND_A_CONST, 'load_constant')
         self.add_mapping(RGX_COMMAND_L, 'label')
         self.add_mapping(RGX_COMMAND_C, 'compute')
 
+        self.add_type_filter('int', int)
+
+        self.add_transformer(r'\s', '')
+        self.add_transformer(RGX_COMMENT, '')
+
     def add_mapping(self, regex, command_type):
         compiled = re.compile(regex)
         self.parser_mapping[compiled] = command_type
+
+    def add_type_filter(self, type_name, pred):
+        self.type_filters[type_name] = pred
+
+    def add_transformer(self, select_re, transform_re):
+        if isinstance(select_re, str):
+            select_re = re.compile(select_re)
+        self.transformers[select_re] = transform_re
 
     @asyncio.coroutine
     def parse(self):
@@ -68,7 +84,7 @@ class Parser(object):
         """ Parses the line, updating properties.
         """
 
-        line = self.strip_line(line)
+        line = self.transform_line(line)
         if not line:
             return
 
@@ -79,8 +95,8 @@ class Parser(object):
                 for group, value in match.groupdict().items():
                     if '_' in group:
                         identifier, type_filter = group.split('_', maxsplit=2)
-                        if type_filter == 'int':
-                            value = int(value)
+                        if type_filter in self.type_filters:
+                            value = self.type_filters[type_filter](value)
                         else:
                             raise RuntimeError('Unsupported type filter {} for group {}'.format(type_filter. group))
                     else:
@@ -88,12 +104,9 @@ class Parser(object):
                     setattr(line_data, identifier, value)
                 yield line_data
 
-    @staticmethod
-    def strip_line(line):
-        """ Strip whitespace and comments """
-        # Remove all whitespace
-        line = ''.join(line.split())
 
-        # Remove comments
-        line = re.sub(RGX_COMMENT, '', line)
+    def transform_line(self, line):
+        """ Run transformers """
+        for transform_selector, transform in self.transformers.items():
+            line = re.sub(transform_selector, transform, line)
         return line
