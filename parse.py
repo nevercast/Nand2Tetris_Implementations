@@ -31,9 +31,12 @@ class ParserLine(object):
     def __init__(self, line, line_type):
         self.line = line
         self.line_type = line_type
+        self.attributes = {}
 
     line = None
     line_type = None  # 'load_symbol', 'load_constant', 'compute', 'label'
+
+    attributes = {}
     destination = None  # Destination for compute operation
     computation = None  # Compute operation subtype
     jump_condition = None  # Jump condition
