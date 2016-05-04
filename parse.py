@@ -57,9 +57,9 @@ class Parser(object):
         self.add_mapping(RGX_COMMAND_L, 'label')
         self.add_mapping(RGX_COMMAND_C, 'compute')
 
-    def add_mapping(self, regex, type):
+    def add_mapping(self, regex, command_type):
         compiled = re.compile(regex)
-        self.parser_mapping[compiled] = type
+        self.parser_mapping[compiled] = command_type
 
     @asyncio.coroutine
     def parse(self):
