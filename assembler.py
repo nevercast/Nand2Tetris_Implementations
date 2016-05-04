@@ -21,18 +21,18 @@ async def resolve_operation(pline: parse.ParserLine, code_address):
 
     # Pre-Processing
     if pline.line_type == 'load_symbol':  # If a symbol is defined. Resolve it and yield if it's not ready yet.
-        pline.attributes['constant'] = await (await map.get(pline.get('symbol')))
+        pline.constant = await (await map.get(pline.symbol))
         pline.line_type = 'load_constant'
 
     # Assembling
     if pline.line_type == 'load_constant':
-        return code.emit_a(pline.get('constant'))
+        return code.emit_a(pline.constant)
     elif pline.line_type == 'compute':
-        return code.emit_c(pline.get('compute'), pline.get('destination'), pline.get('jump'))
+        return code.emit_c(pline.compute, pline.destination, pline.jump)
     elif pline.line_type == 'label':
         # Set the label to our current address
         # This will trigger any parallel tasks waiting for this symbol in a map.get()
-        await map.set(pline.get('symbol'), code_address)
+        await map.set(pline.symbol, code_address)
 
 @asyncio.coroutine
 def assemble(filename):

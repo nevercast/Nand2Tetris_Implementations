@@ -2,6 +2,7 @@
 """ Parses Assembly lines and provides information about them """
 import re
 import asyncio
+import softobject
 
 
 # Matches Alpha-Numeric, $, . and :
@@ -25,22 +26,15 @@ RGX_COMMAND_C = r'^(?:(?P<destination>[AMD]+)=)?(?P<compute>[01\-+ADM&|!]+)(?:;(
 RGX_COMMENT = r'\/\/.*'
 
 
-class ParserLine(object):
+class ParserLine(softobject.SoftObject):
     """ A line that has been hit by the parser """
-
-    def __init__(self, line, line_type):
-        self.line = line
-        self.line_type = line_type
-        self.attributes = {}
 
     line = None
     line_type = None  # 'load_symbol', 'load_constant', 'compute', 'label'
 
-    attributes = {}
-
-    def get(self, field, default=None):
-        """ Gets an attribute from the line """
-        return self.attributes.get(field, default)
+    def __init__(self, line, line_type):
+        self.line = line
+        self.line_type = line_type
 
 
 class Parser(object):
@@ -91,7 +85,7 @@ class Parser(object):
                             raise RuntimeError('Unsupported type filter {} for group {}'.format(type_filter. group))
                     else:
                         identifier = group
-                    line_data.attributes[identifier] = value
+                    setattr(line_data, identifier, value)
                 yield line_data
 
     @staticmethod
