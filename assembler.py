@@ -103,7 +103,7 @@ def assemble(filename):
 # This prevents interrupts being ignored (allows Ctrl+C to work)
 async def _windows_kb_interrupt_fix():
     while RUNNING:
-        await asyncio.sleep(1)
+        await asyncio.sleep(0)
 
 try:
     if len(sys.argv) < 2:
