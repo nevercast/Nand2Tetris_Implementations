@@ -9,16 +9,16 @@ import asyncio
 RGX_SYMBOL = r'[a-zA-Z$.:][\w$.:]+'
 
 # @SYMBOL
-RGX_COMMAND_A_SYMB = r'@(' + RGX_SYMBOL + ')'
+RGX_COMMAND_A_SYMB = r'@(?P<symbol>' + RGX_SYMBOL + ')'
 
 # @CONSTANT
-RGX_COMMAND_A_CONST = r'@(\d+)'
+RGX_COMMAND_A_CONST = r'@(?P<constant>\d+)'
 
 # (SYMBOL)
-RGX_COMMAND_L = r'\((' + RGX_SYMBOL + ')\)'
+RGX_COMMAND_L = r'\((?P<symbol>' + RGX_SYMBOL + ')\)'
 
 # Command
-RGX_COMMAND_C = r'^(?:([AMD]+)=)?([01\-+ADM&|!]+)(?:;([JMLGNETPQ]{3}))?$'
+RGX_COMMAND_C = r'^(?:(?P<destination>[AMD]+)=)?(?P<compute>[01\-+ADM&|!]+)(?:;(?P<jump>[JMLGNETPQ]{3}))?$'
 
 # Everything that is matched as a comment is deleted
 # // *
