@@ -5,27 +5,6 @@ import asyncio
 import softobject
 
 
-# Matches Alpha-Numeric, $, . and :
-# The first letter cannot be decimal.
-RGX_SYMBOL = r'[a-zA-Z$.:][\w$.:]+'
-
-# @SYMBOL
-RGX_COMMAND_A_SYMB = r'@(?P<symbol>' + RGX_SYMBOL + ')'
-
-# @CONSTANT
-RGX_COMMAND_A_CONST = r'@(?P<constant_int>\d+)'
-
-# (SYMBOL)
-RGX_COMMAND_L = r'\((?P<symbol>' + RGX_SYMBOL + ')\)'
-
-# Command
-RGX_COMMAND_C = r'^(?:(?P<destination>[AMD]+)=)?(?P<compute>[01\-+ADM&|!]+)(?:;(?P<jump>[JMLGNETPQ]{3}))?$'
-
-# Everything that is matched as a comment is deleted
-# // *
-RGX_COMMENT = r'\/\/.*'
-
-
 class ParserLine(softobject.SoftObject):
     """ A line that has been hit by the parser """
 
@@ -47,16 +26,7 @@ class Parser(object):
         self.parser_mapping = {}
         self.type_filters = {}
         self.transformers = {}
-
-        self.add_mapping(RGX_COMMAND_A_SYMB, 'load_symbol')
-        self.add_mapping(RGX_COMMAND_A_CONST, 'load_constant')
-        self.add_mapping(RGX_COMMAND_L, 'label')
-        self.add_mapping(RGX_COMMAND_C, 'compute')
-
         self.add_type_filter('int', int)
-
-        self.add_transformer(r'\s', '')
-        self.add_transformer(RGX_COMMENT, '')
 
     def add_mapping(self, regex, command_type):
         compiled = re.compile(regex)

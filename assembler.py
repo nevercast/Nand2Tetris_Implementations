@@ -11,6 +11,26 @@ CODE_BASE_ADDRESS = 0
 variable_address = 16
 concurrency = 8000
 
+# Matches Alpha-Numeric, $, . and :
+# The first letter cannot be decimal.
+RGX_SYMBOL = r'[a-zA-Z$.:][\w$.:]+'
+
+# @SYMBOL
+RGX_COMMAND_A_SYMB = r'@(?P<symbol>' + RGX_SYMBOL + ')'
+
+# @CONSTANT
+RGX_COMMAND_A_CONST = r'@(?P<constant_int>\d+)'
+
+# (SYMBOL)
+RGX_COMMAND_L = r'\((?P<symbol>' + RGX_SYMBOL + ')\)'
+
+# Command
+RGX_COMMAND_C = r'^(?:(?P<destination>[AMD]+)=)?(?P<compute>[01\-+ADM&|!]+)(?:;(?P<jump>[JMLGNETPQ]{3}))?$'
+
+# Everything that is matched as a comment is deleted
+# // *
+RGX_COMMENT = r'\/\/.*'
+
 RUNNING = True  # Only used for a Windows fix -.-" freaking windows man!
 
 
@@ -38,6 +58,15 @@ async def resolve_operation(pline: parse.ParserLine, code_address):
 def assemble(filename):
     # Create a parser
     parser = parse.Parser(filename)
+
+    parser.add_mapping(RGX_COMMAND_A_SYMB, 'load_symbol')
+    parser.add_mapping(RGX_COMMAND_A_CONST, 'load_constant')
+    parser.add_mapping(RGX_COMMAND_L, 'label')
+    parser.add_mapping(RGX_COMMAND_C, 'compute')
+
+    parser.add_transformer(r'\s', '')           # Erase whitespace
+    parser.add_transformer(RGX_COMMENT, '')     # Remove comments
+
     address = CODE_BASE_ADDRESS  # Every operation is a single int. Makes addresses lovely
     tasks = []  # Running tasks
     for parser_line in parser.parse():  # Queue parallel processing of all the lines
