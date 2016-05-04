@@ -37,11 +37,10 @@ class ParserLine(object):
     line_type = None  # 'load_symbol', 'load_constant', 'compute', 'label'
 
     attributes = {}
-    destination = None  # Destination for compute operation
-    computation = None  # Compute operation subtype
-    jump_condition = None  # Jump condition
-    constant = None
-    symbol = None
+
+    def get(self, field, default=None):
+        """ Gets an attribute from the line """
+        return self.attributes.get(field, default)
 
 
 class Parser(object):
@@ -93,9 +92,6 @@ class Parser(object):
                     else:
                         identifier = group
                     line_data.attributes[identifier] = value
-                print(line_data, line_data.attributes)
-                import sys
-                sys.exit(1)
                 yield line_data
 
     @staticmethod
