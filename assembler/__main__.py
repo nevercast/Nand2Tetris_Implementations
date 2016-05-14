@@ -119,7 +119,7 @@ except KeyboardInterrupt:
     pass
 except Exception as e:
     print('Failed to assemble target')
-    print('Syntax: python assembler.py input.asm')
+    print('Syntax: python __main__.py input.asm')
     print('Output will be input.jack')
     print('Error:')
     print(e)
